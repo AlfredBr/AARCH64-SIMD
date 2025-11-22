@@ -9,17 +9,29 @@ A .NET 10 console application that explores four increasingly optimized implemen
 
 The workload iterates a chaotic logistic-map function for each element of a generated float array. Chaotic math is branch-free but multiplies aggressively, making it a good fit for SIMD demonstrations.
 
-NOTE: This runs fine on my Intel i7-12700k CPU (8x32bit vector lanes) and the GPU code runs fine with my GTX3080 installed.
+## Hardware used for testing
+
+| CPU | CPU SIMD Width | RAM | GPU | GPU Architecture | SM Count | CUDA Cores per SM | Total CUDA Cores | Cost |
+|-----|----------------|-----|-----|------------------|---------:|------------------:|-----------------:|-----:|
+| Intel i7-12700K | 8 × 32-bit lanes (AVX2) | 32 GB | RTX 3080 | Ampere | 68 | 128 | 8,704 | $2,000 |
+| ARM Cortex-A57 | 4 × 32-bit lanes (NEON) | 4 GB | onboard | Maxwell | 1 | 128 | 128 | $100 |
 
 ---
-
-| Mode               | Time (ms) | Throughput (M iter/s) | Checksum       |
-|--------------------|-----------|-----------------------|----------------|
+### Intel SIMD : width = 8 lanes, dataset = 4,000,000 floats x 150 chaos iterations
+| Mode   | Time (ms) | Throughput (M iter/s) | Checksum       |
+|--------------------|-----------:|-----------------------:|----------------:|
 | Scalar (1 thread)  | 1,083.5   | 553.8                 | 2185294.1219   |
 | Parallel (1 thread per core)| 88.0      | 6,817.8               | 2185294.1219   |
 | Parallel + SIMD (8 lanes)   | 11.0      | 54,713.1              | 2185294.1219   |
 | GPU (ILGPU, CUDA, RTX3080) | 9.9 | 60,752.1            | 2185294.1219   |
 
+### ARM64 SIMD : width = 4 lanes, dataset = 4,000,000 floats x 150 chaos iterations
+| Mode   | Time (ms) | Throughput (M iter/s) | Checksum       |
+|--------------------|-----------:|-----------------------:|----------------:|
+| Scalar (1 thread)  |    6,871.4  |  87.3  |  2185151.8441
+| Parallel (1 thread per core) |   1,780.0  |  337.1  |  2185151.8441
+| Parallel + SIMD (4 lanes)    |     473.6   |  1,266.9  |  2185151.8441
+| GPU (ILGPU, CUDA, NVIDIA Maxwell) | 208.1   |  2,883.3  |  2185151.8441
 ---
 
 ## How It Works
