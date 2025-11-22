@@ -89,7 +89,7 @@ Sample Release output on the authoring machine (8-lane SIMD):
 ```
 ARM/Intel SIMD demo — dataset 4,000,000 floats x 150 chaos iterations
 SIMD width: 8 lanes (hardware accelerated)
-Scalar (1 thread)      1,089.2 ms  |  throughput 550.9 M it/s  |  checksum 2185294.1219
+Scalar (1 thread)      1,089.2 ms  |  throughput 550.9 M it/s    |  checksum 2185294.1219
 Parallel (per core)       84.0 ms  |  throughput 7,145.4 M it/s  |  checksum 2185294.1219
 Parallel + SIMD           11.0 ms  |  throughput 54,746.0 M it/s |  checksum 2185294.1219
 GPU (ILGPU, RTX)          14.0 ms  |  throughput 42,923.7 M it/s |  checksum 2185294.1219
