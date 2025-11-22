@@ -62,7 +62,7 @@ The workload iterates a chaotic logistic-map function for each element of a gene
 ### Issues encountered (and fixes)
 - **Checksum mismatch**: The scalar logistic math originally multiplied in a different order than the SIMD vectorized function, producing different rounding noise. Aligning the scalar implementation to compute `value * (1 - value)` before multiplying by the constant ensured identical checksums and makes correctness comparisons meaningful.
 - **Interlocked with doubles**: `Interlocked.Add` only supports integers on older frameworks, so we replaced it with a lightweight `lock` to combine per-thread `double` sums safely.
-- **SIMD slower than parallel scalar**: The first SIMD attempt assigned single vectors to tasks, causing extreme scheduling overhead and poor cache locality. Switching to `Partitioner.Create` with chunk sizes tied to `ProcessorCount` let each worker chew through contiguous vector ranges before synchronizing, reducing contention and finally delivering the expected >50x speedup in Release builds.
+- **SIMD slower than parallel scalar**: The first SIMD attempt assigned single vectors to tasks, causing extreme scheduling overhead and poor cache locality. Switching to `Partitioner.Create` with chunk sizes tied to `ProcessorCount` let each worker chew through contiguous vector ranges before synchronizing, reducing contention and finally delivering the expected >50x speedup in Release builds. (NOTE: This really surprised me and I would not have discoved this without the help of AI/ChatGPT.  Amazing!)
 
 ---
 
