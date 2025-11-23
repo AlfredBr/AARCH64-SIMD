@@ -5,16 +5,16 @@ A .NET 10 console application that explores four increasingly optimized implemen
 1. **Scalar (single thread)** – traditional loop, easiest to understand.
 2. **Parallel scalar** – partitions the scalar loop across CPU cores via `Parallel.For`.
 3. **Parallel + SIMD** – uses `System.Numerics.Vector<float>` inside the parallel loop so each core processes multiple elements per instruction (works on Intel SSE/AVX and ARM AdvSIMD).
-4. **GPU (ILGPU)** – launches the same logistic-map update on any CUDA-capable NVIDIA GPU via ILGPU, so the workload can be offloaded onto a supported NVIDIA GPU on both Intel and ARM boxes.  BTW: [ILGPU](https://ilgpu.net/) is awesome!  It is the only C# GPGPU framework I've found that works on both Windows and Linux, Intel and ARM alike.
+4. **GPU (via ILGPU)** – launches the same logistic-map update on any CUDA-capable NVIDIA GPU via ILGPU, so the workload can be offloaded onto a supported NVIDIA GPU on both Intel and ARM boxes.  (BTW: [ILGPU](https://ilgpu.net/) is awesome!  It is the only C# GPGPU framework I've found that works on both Windows and Linux, Intel and ARM alike.)
 
 The workload iterates a chaotic logistic-map function for each element of a generated float array. Chaotic math is branch-free but multiplies aggressively, making it a good fit for SIMD demonstrations.
 
 ## Hardware used for testing
 
-| CPU | CPU SIMD Width | RAM | GPU | GPU Architecture | SM Count | CUDA Cores per SM | Total CUDA Cores | Cost |
-|-----|----------------|-----|-----|------------------|---------:|------------------:|-----------------:|-----:|
-| Intel i7-12700K | 8 × 32-bit lanes ([AVX2](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions)) | 32 GB | RTX 3080 | Ampere | 68 | 128 | 8,704 | $2,000 |
-| ARM Cortex-A57 | 4 × 32-bit lanes ([NEON](https://armasm.com/docs/neon/overview/)) | 4 GB | onboard | Maxwell | 1 | 128 | 128 | $100 |
+| CPU | Cores | CPU SIMD Width | RAM | GPU | GPU Architecture | SM Count | CUDA Cores per SM | Total CUDA Cores | Cost |
+|-----|:-----:|:--------------:|----:|:---:|:----------------:|:--------:|:-----------------:|:----------------:|-----:|
+| Intel i7-12700K | 12/20 | 8 lanes × 32-bits ([AVX2](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions)) | 32 GB | RTX 3080 | Ampere | 68 | 128 | 8,704 | $2,000 |
+| ARM Cortex-A57 | 4 | 4 lanes × 32-bits ([NEON](https://armasm.com/docs/neon/overview/)) | 4 GB | onboard | Maxwell | 1 | 128 | 128 | $100 |
 
 ## Sample Results
 ### Intel SIMD : width = 8 lanes, dataset = 4,000,000 floats x 150 chaos iterations
@@ -22,7 +22,7 @@ The workload iterates a chaotic logistic-map function for each element of a gene
 |--------------------|-----------:|-----------------------:|----------------:|
 | Scalar (1 thread)  | 1,083.5   | 553.8                 | 2185294.1219   |
 | Parallel (1 thread per core)| 88.0      | 6,817.8               | 2185294.1219   |
-| Parallel + SIMD (8 lanes)   | 11.0      | 54,713.1              | 2185294.1219   |
+| Parallel + SIMD (8 lanes x 32-bits)   | 11.0      | 54,713.1              | 2185294.1219   |
 | GPU (ILGPU, CUDA, NVIDIA RTX3080) | 9.9 | 60,752.1            | 2185294.1219   |
 
 ### ARM64 SIMD : width = 4 lanes, dataset = 4,000,000 floats x 150 chaos iterations
@@ -30,7 +30,7 @@ The workload iterates a chaotic logistic-map function for each element of a gene
 |--------------------|-----------:|-----------------------:|----------------:|
 | Scalar (1 thread)  |    6,871.4  |  87.3  |  2185151.8441 |
 | Parallel (1 thread per core) |   1,780.0  |  337.1  |  2185151.8441 |
-| Parallel + SIMD (4 lanes)    |     473.6   |  1,266.9  |  2185151.8441 |
+| Parallel + SIMD (4 lanes x 32-bits)    |     473.6   |  1,266.9  |  2185151.8441 |
 | GPU (ILGPU, CUDA, NVIDIA Maxwell) | 208.1   |  2,883.3  |  2185151.8441 |
 
 ### Observations
@@ -42,6 +42,7 @@ The workload iterates a chaotic logistic-map function for each element of a gene
 ## How It Works
 
 ### Data generation
+- A `float` is 32-bits.
 - `DataFactory.Create` fills an array with deterministic values derived from `sin(i * 0.000123)` so every run is reproducible.
 - Values are constrained to `(0, 1)` so the logistic map stays numerically stable.
 
