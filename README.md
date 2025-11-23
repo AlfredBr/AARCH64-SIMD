@@ -5,7 +5,7 @@ A .NET 10 console application that explores four increasingly optimized implemen
 1. **Scalar (single thread)** – traditional loop, easiest to understand.
 2. **Parallel scalar** – partitions the scalar loop across CPU cores via `Parallel.For`.
 3. **Parallel + SIMD** – uses `System.Numerics.Vector<float>` inside the parallel loop so each core processes multiple elements per instruction (works on Intel SSE/AVX and ARM AdvSIMD).
-4. **GPU (ILGPU)** – launches the same logistic-map update on any CUDA-capable NVIDIA GPU via ILGPU, so the workload can be offloaded on both Windows and Linux boxes.  BTW: ILGPU is awesome!  It is the only C# GPU framework I've found that works on both Windows and Linux, Intel and ARM alike.
+4. **GPU (ILGPU)** – launches the same logistic-map update on any CUDA-capable NVIDIA GPU via ILGPU, so the workload can be offloaded onto a supported NVIDIA GPU on both Intel and ARM boxes.  BTW: [ILGPU](https://ilgpu.net/) is awesome!  It is the only C# GPGPU framework I've found that works on both Windows and Linux, Intel and ARM alike.
 
 The workload iterates a chaotic logistic-map function for each element of a generated float array. Chaotic math is branch-free but multiplies aggressively, making it a good fit for SIMD demonstrations.
 
@@ -13,8 +13,8 @@ The workload iterates a chaotic logistic-map function for each element of a gene
 
 | CPU | CPU SIMD Width | RAM | GPU | GPU Architecture | SM Count | CUDA Cores per SM | Total CUDA Cores | Cost |
 |-----|----------------|-----|-----|------------------|---------:|------------------:|-----------------:|-----:|
-| Intel i7-12700K | 8 × 32-bit lanes (AVX2) | 32 GB | RTX 3080 | Ampere | 68 | 128 | 8,704 | $2,000 |
-| ARM Cortex-A57 | 4 × 32-bit lanes (NEON) | 4 GB | onboard | Maxwell | 1 | 128 | 128 | $100 |
+| Intel i7-12700K | 8 × 32-bit lanes ([AVX2](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions)) | 32 GB | RTX 3080 | Ampere | 68 | 128 | 8,704 | $2,000 |
+| ARM Cortex-A57 | 4 × 32-bit lanes ([NEON](https://armasm.com/docs/neon/overview/)) | 4 GB | onboard | Maxwell | 1 | 128 | 128 | $100 |
 
 ## Sample Results
 ### Intel SIMD : width = 8 lanes, dataset = 4,000,000 floats x 150 chaos iterations
@@ -23,7 +23,7 @@ The workload iterates a chaotic logistic-map function for each element of a gene
 | Scalar (1 thread)  | 1,083.5   | 553.8                 | 2185294.1219   |
 | Parallel (1 thread per core)| 88.0      | 6,817.8               | 2185294.1219   |
 | Parallel + SIMD (8 lanes)   | 11.0      | 54,713.1              | 2185294.1219   |
-| GPU (ILGPU, CUDA, RTX3080) | 9.9 | 60,752.1            | 2185294.1219   |
+| GPU (ILGPU, CUDA, NVIDIA RTX3080) | 9.9 | 60,752.1            | 2185294.1219   |
 
 ### ARM64 SIMD : width = 4 lanes, dataset = 4,000,000 floats x 150 chaos iterations
 | Mode   | Time (ms) | Throughput (M iter/s) | Checksum       |
@@ -33,11 +33,11 @@ The workload iterates a chaotic logistic-map function for each element of a gene
 | Parallel + SIMD (4 lanes)    |     473.6   |  1,266.9  |  2185151.8441 |
 | GPU (ILGPU, CUDA, NVIDIA Maxwell) | 208.1   |  2,883.3  |  2185151.8441 |
 
+### Observations
 - Throughput = (dataset length × iterations) / time in seconds
 - Moving from scalar to parallel execution yields a significant speedup roughly proportional to the number of CPU cores.
 - Adding SIMD on top of parallelism further amplifies throughput by processing multiple data points per instruction.
 - The GPU implementation achieves the highest throughput, although the advantage is less pronounced on smaller datasets due to data transfer overheads.  The GPU performance gain can be quite surprising on larger workloads.
----
 
 ## How It Works
 
@@ -65,7 +65,6 @@ The workload iterates a chaotic logistic-map function for each element of a gene
 - **Interlocked with doubles**: `Interlocked.Add` only supports integers on older frameworks, so we replaced it with a lightweight `lock` to combine per-thread `double` sums safely.
 - **SIMD slower than parallel scalar**: The first SIMD attempt assigned single vectors to tasks, causing extreme scheduling overhead and poor cache locality. Switching to `Partitioner.Create` with chunk sizes tied to `ProcessorCount` let each worker chew through contiguous vector ranges before synchronizing, reducing contention and finally delivering the expected >50x speedup in Release builds. (NOTE: This really surprised me and I would not have discoved this without the help of AI/ChatGPT.  Amazing!)
 
----
 
 ## Building and Running
 
@@ -77,10 +76,7 @@ dotnet build
 dotnet run
 
 # Common demo: Release build with large workload
-dotnet run -c Release -- --length=4000000 --iterations=150
-
-# Run Release build while letting ILGPU pick a CUDA device
-dotnet run -c Release
+dotnet run -c Release -- --length=8000000 --iterations=512
 ```
 
 > **GPU prerequisites:** Install the NVIDIA driver and CUDA toolkit appropriate for your platform. ILGPU will automatically fall back to a CPU accelerator if no CUDA device is detected. See [GPU.md](GPU.md) for full instructions.
@@ -98,14 +94,14 @@ GPU (ILGPU, RTX)          14.0 ms  |  throughput 42,923.7 M it/s |  checksum 218
 
 Throughput differences illustrate how multi-core execution and vectorization compound. Results vary with CPU architecture and thermal conditions, but the checksum should stay constant if the hardware supports IEEE-754 single-precision correctly.
 
----
+
 
 ## Tips for experimentation
 - Adjust `--length` or `--iterations` to emphasize either memory bandwidth (`length`) or compute intensity (`iterations`).
 - Compare Debug vs Release. JIT optimizations (loop unrolling, constant folding) are essential for SIMD performance.
-- Inspect `Vector<float>.Count` on different machines to see how Intel AVX-512 or ARM SVE-ready chips expose wider lanes without code changes.
+- Inspect `Vector<float>.Count` on different machines to see how Intel AVX-512 or ARM SVE-ready chips expose wider lanes without code changes. (NOTE: I've tested this on Intel AVX2 and ARM NEON hardware only so far, but it should work seamlessly on wider SIMD hardware.  `Vector<T>.Count` is the number of lanes on your CPU and the code adapts automatically at runtime.  If you run this on an AVX-512 capable CPU, you should see `Vector<float>.Count` equal to 16 lanes!)
 
----
+
 
 ## Troubleshooting
 - **Is Release run slower than expected?** Ensure the process is 64-bit and your CPU is not thermally throttled. Running from Visual Studio with the debugger attached may force Debug optimizations off.
