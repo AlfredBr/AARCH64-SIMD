@@ -75,7 +75,7 @@ dotnet build
 # Run with defaults (Debug)
 dotnet run
 
-# Common demo: Release build with large workload
+# Run a release build with large workload
 dotnet run -c Release -- --length=8000000 --iterations=512
 ```
 
@@ -92,7 +92,7 @@ Parallel + SIMD           11.0 ms  |  throughput 54,746.0 M it/s |  checksum 218
 GPU (ILGPU, RTX)          14.0 ms  |  throughput 42,923.7 M it/s |  checksum 2185294.1219
 ```
 
-Throughput differences illustrate how multi-core execution and vectorization compound. Results vary with CPU architecture and thermal conditions, but the checksum should stay constant if the hardware supports IEEE-754 single-precision correctly.
+Throughput differences illustrate how the performance benefits of multi-core execution and vectorization compound. Results vary with CPU architecture and thermal conditions, but the checksum should stay constant if the hardware supports IEEE-754 single-precision correctly.
 
 
 
