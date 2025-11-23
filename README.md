@@ -99,7 +99,7 @@ Throughput differences illustrate how the performance benefits of multi-core exe
 ## Tips for experimentation
 - Adjust `--length` or `--iterations` to emphasize either memory bandwidth (`length`) or compute intensity (`iterations`).
 - Compare Debug vs Release. JIT optimizations (loop unrolling, constant folding) are essential for SIMD performance.
-- Inspect `Vector<float>.Count` on different machines to see how Intel AVX-512 or ARM SVE-ready chips expose wider lanes without code changes. (NOTE: I've tested this on Intel AVX2 and ARM NEON hardware only so far, but it should work seamlessly on wider SIMD hardware.  `Vector<T>.Count` is the number of lanes on your CPU and the code adapts automatically at runtime.  If you run this on an AVX-512 capable CPU, you should see `Vector<float>.Count` equal to 16 lanes!)
+- Inspect `Vector<float>.Count` on different machines to see how Intel AVX-512 or ARM SVE-ready chips expose wider lanes without code changes. (NOTE: I've tested this on Intel AVX2 and ARM NEON hardware only so far, but it should work seamlessly on wider SIMD hardware.  `Vector<T>.Count` is the number of lanes on your CPU and the code adapts automatically at runtime.  If you run this on an AVX-512 capable CPU, you should see `Vector<float>.Count` equal to 16 x 32-bit lanes!)
 
 
 
