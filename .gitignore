@@ -59,6 +59,7 @@ dlldata.c
 
 # Benchmark Results
 BenchmarkDotNet.Artifacts/
+/benchmark-results/
 
 # .NET
 project.lock.json
@@ -482,4 +483,3 @@ $RECYCLE.BIN/
 
 # Vim temporary swap files
 *.swp
-deploy.ps1

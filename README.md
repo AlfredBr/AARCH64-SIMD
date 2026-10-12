@@ -69,15 +69,50 @@ The workload iterates a chaotic logistic-map function for each element of a gene
 
 ## Building and Running
 
+Install the .NET 10 SDK before building. From the repository directory, build for Linux ARM64 with:
+
+```sh
+dotnet build ARM64-SIMD.csproj -c Release -r linux-arm64 -p:Platform=AnyCPU
+```
+
+In PowerShell, the same build is available as `./build.ps1`. The script defaults to Release and `linux-arm64`; use `-Configuration Debug` or `-Runtime linux-x64` to override those defaults.
+
+Use `./deploy.ps1` to publish a self-contained Linux ARM64 build and upload it to `alfredbr@node0:~/arm64_simd`. Use `./deploy.ps1 -PublishOnly` to publish locally without uploading. Existing remote files are overwritten by the upload; other files in the destination are retained.
+
+Use `./deploy.ps1 -Run` to deploy, capture host details, and run three benchmark repetitions. Output is saved in `benchmark-results/`. Override the workload with `-Runs`, `-Length`, and `-Iterations`; each remote run has a 180-second timeout.
+
+Use `./benchmark.ps1` to deploy and benchmark both `node0` and `node3`, with three runs per host. The PowerShell runner detects each host's architecture and saves raw output and a Markdown report in `benchmark-results/`. It uses `benchmark-host.sh` over SSH; PowerShell is required only on the local machine. To customize the run:
+
+```powershell
+./benchmark.ps1 -Nodes node0,node3 -Runs 3 -Length 4000000 -Iterations 150
+```
+
+Build output is in `bin/Release/net10.0/linux-arm64/`. To produce a self-contained deployment that includes the .NET runtime:
+
+```sh
+dotnet publish ARM64-SIMD.csproj -c Release -r linux-arm64 -p:Platform=AnyCPU --self-contained true
+```
+
+Copy the contents of `bin/Release/net10.0/linux-arm64/publish/` to the Linux ARM64 machine, then run:
+
+```sh
+chmod +x ARM64-SIMD
+./ARM64-SIMD
+```
+
+Target the `.csproj` directly when specifying a runtime. Explicitly setting `Platform=AnyCPU` also avoids conflicts with a shell environment that sets `Platform=x64`.
+
+For building and running on the current machine:
+
 ```powershell
 # Build (Debug)
-dotnet build
+dotnet build ARM64-SIMD.csproj -p:Platform=AnyCPU
 
 # Run with defaults (Debug)
-dotnet run
+dotnet run --project ARM64-SIMD.csproj -p:Platform=AnyCPU
 
 # Run a release build with large workload
-dotnet run -c Release -- --length=8000000 --iterations=512
+dotnet run --project ARM64-SIMD.csproj -c Release -p:Platform=AnyCPU -- --length=8000000 --iterations=512
 ```
 
 > **GPU prerequisites:** Install the NVIDIA driver and CUDA toolkit appropriate for your platform. ILGPU will automatically fall back to a CPU accelerator if no CUDA device is detected. See [GPU.md](GPU.md) for full instructions.

@@ -1,5 +1,7 @@
 # Benchmark Results
 
+Latest Linux ARM64 test-host findings: [node0, October 11, 2026](benchmark-results/node0-20261011.md), including three runs, host configuration, checksums, and raw output. The measurements below are earlier results from a different system.
+
 Collected with `dotnet run -c Release` on the provided system. Configuration: 4,000,000 floats × 150 logistic iterations; SIMD width 8 lanes (hardware accelerated).
 
 | Workload            | Time (ms) | Throughput (M it/s) | Checksum       |
