@@ -1,6 +1,6 @@
 # .NET SIMD Demo for both Windows x64 and Linux AARCH64
 
-A .NET 10 console application that explores four increasingly optimized implementations of the same CPU-intensive task:
+A .NET 11 console application that explores four increasingly optimized implementations of the same CPU-intensive task:
 
 1. **Scalar (single thread)** – traditional loop, easiest to understand.
 2. **Parallel scalar** – partitions the scalar loop across CPU cores via `Parallel.For`.
@@ -26,12 +26,14 @@ The workload iterates a chaotic logistic-map function for each element of a gene
 | GPU (ILGPU, CUDA, NVIDIA RTX3080) | 9.9 | 60,752.1            | 2185294.1219   |
 
 ### ARM64 SIMD : width = 4 lanes, dataset = 4,000,000 floats x 150 chaos iterations
+Measured on `node3` (Cortex-A57 + Tegra X1) with a self-contained .NET 11 build. Each time is the mean of 3 runs ([full report](benchmark-results/node3-20261124-230930.md)).
+
 | Mode   | Time (ms) | Throughput (M iter/s) | Checksum       |
 |--------------------|-----------:|-----------------------:|----------------:|
-| Scalar (1 thread)  |    6,871.4  |  87.3  |  2185151.8441 |
-| Parallel (1 thread per core) |   1,780.0  |  337.1  |  2185151.8441 |
-| Parallel + SIMD (4 lanes x 32-bits)    |     473.6   |  1,266.9  |  2185151.8441 |
-| GPU (ILGPU, CUDA, NVIDIA Maxwell) | 208.1   |  2,883.3  |  2185151.8441 |
+| Scalar (1 thread)  |    6,823.8  |  87.9  |  2185151.8441 |
+| Parallel (1 thread per core) |   1,791.3  |  335.0  |  2185151.8441 |
+| Parallel + SIMD (4 lanes x 32-bits)    |     485.1   |  1,236.8  |  2185151.8441 |
+| GPU (ILGPU, CUDA, NVIDIA Maxwell) | 180.7   |  3,321.0  |  2185151.8441 |
 
 ### Observations
 - Throughput = (dataset length × iterations) / time in seconds
@@ -69,7 +71,7 @@ The workload iterates a chaotic logistic-map function for each element of a gene
 
 ## Building and Running
 
-Install the .NET 10 SDK before building. From the repository directory, build for Linux ARM64 with:
+Install the .NET 11 SDK before building. From the repository directory, build for Linux ARM64 with:
 
 ```sh
 dotnet build ARM64-SIMD.csproj -c Release -r linux-arm64 -p:Platform=AnyCPU
@@ -77,9 +79,9 @@ dotnet build ARM64-SIMD.csproj -c Release -r linux-arm64 -p:Platform=AnyCPU
 
 In PowerShell, the same build is available as `./build.ps1`. The script defaults to Release and `linux-arm64`; use `-Configuration Debug` or `-Runtime linux-x64` to override those defaults.
 
-Use `./deploy.ps1` to publish a self-contained Linux ARM64 build and upload it to `alfredbr@node0:~/arm64_simd`. Use `./deploy.ps1 -PublishOnly` to publish locally without uploading. Existing remote files are overwritten by the upload; other files in the destination are retained.
+Use `./deploy.ps1 <node>` (for example `./deploy.ps1 node3`) to publish a self-contained Linux ARM64 build and upload it to `alfredbr@<node>:~/arm64_simd`. The node defaults to `node0`; use `-UserName` to override the SSH user. Use `./deploy.ps1 -PublishOnly` to publish locally without uploading. Existing remote files are overwritten by the upload; other files in the destination are retained.
 
-Use `./deploy.ps1 -Run` to deploy, capture host details, and run three benchmark repetitions. Output is saved in `benchmark-results/`. Override the workload with `-Runs`, `-Length`, and `-Iterations`; each remote run has a 180-second timeout.
+Use `./deploy.ps1 <node> -Run` to deploy, capture host details, and run three benchmark repetitions. Output is saved in `benchmark-results/`. Override the workload with `-Runs`, `-Length`, and `-Iterations`; each remote run has a 180-second timeout.
 
 Use `./benchmark.ps1` to deploy and benchmark both `node0` and `node3`, with three runs per host. The PowerShell runner detects each host's architecture and saves raw output and a Markdown report in `benchmark-results/`. It uses `benchmark-host.sh` over SSH; PowerShell is required only on the local machine. To customize the run:
 
@@ -87,13 +89,15 @@ Use `./benchmark.ps1` to deploy and benchmark both `node0` and `node3`, with thr
 ./benchmark.ps1 -Nodes node0,node3 -Runs 3 -Length 4000000 -Iterations 150
 ```
 
-Build output is in `bin/Release/net10.0/linux-arm64/`. To produce a self-contained deployment that includes the .NET runtime:
+Use `./Clean.ps1 <node>` (for example `./Clean.ps1 node3`) to remove the `~/arm64_simd` deployment from that host. Add `-WhatIf` to preview the removal or `-UserName` to override the SSH user.
+
+Build output is in `bin/Release/net11.0/linux-arm64/`. To produce a self-contained deployment that includes the .NET runtime:
 
 ```sh
 dotnet publish ARM64-SIMD.csproj -c Release -r linux-arm64 -p:Platform=AnyCPU --self-contained true
 ```
 
-Copy the contents of `bin/Release/net10.0/linux-arm64/publish/` to the Linux ARM64 machine, then run:
+Copy the contents of `bin/Release/net11.0/linux-arm64/publish/` to the Linux ARM64 machine, then run:
 
 ```sh
 chmod +x ARM64-SIMD
@@ -141,7 +145,7 @@ Throughput differences illustrate how the performance benefits of multi-core exe
 
 ## Troubleshooting
 - **Is Release run slower than expected?** Ensure the process is 64-bit and your CPU is not thermally throttled. Running from Visual Studio with the debugger attached may force Debug optimizations off.
-- **Is SIMD accelerated on your hardware?** `Vector.IsHardwareAccelerated` returns false on very old CPUs or when targeting x86 without enabling SSE2. Switch to `net10.0` (already configured) and run on 64-bit.
+- **Is SIMD accelerated on your hardware?** `Vector.IsHardwareAccelerated` returns false on very old CPUs or when targeting x86 without enabling SSE2. Switch to `net11.0` (already configured) and run on 64-bit.
 - **Running out-of-memory?** Reduce `--length` or iterations; the default array consumes ~16 MB (4 million * 4 bytes).
 - **Is the GPU benchmark missing?** Verify the CUDA driver/toolkit installation (`nvidia-smi`) and that the process has permission to access the device. ILGPU logs which accelerator it picked at startup.
 

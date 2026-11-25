@@ -26,7 +26,7 @@ foreach ($node in $Nodes) {
         if (-not $published.ContainsKey($runtime)) {
             dotnet publish (Join-Path $PSScriptRoot 'ARM64-SIMD.csproj') -c Release -r $runtime -p:Platform=AnyCPU --self-contained true
             if ($LASTEXITCODE -ne 0) { throw "Publish failed for $runtime." }
-            $published[$runtime] = Join-Path $PSScriptRoot "bin/Release/net10.0/$runtime/publish"
+            $published[$runtime] = Join-Path $PSScriptRoot "bin/Release/net11.0/$runtime/publish"
         }
         & ssh.exe -o BatchMode=yes -o ConnectTimeout=15 $destination 'mkdir -p ~/arm64_simd'
         if ($LASTEXITCODE -ne 0) { throw 'Remote directory setup failed.' }
@@ -48,7 +48,7 @@ foreach ($node in $Nodes) {
         if ($measurements.Count -ne 4 * $Runs) { throw "Expected $($Runs * 4) measurements; found $($measurements.Count). See $rawPath" }
         $groups = @(foreach ($mode in @('Scalar (1 thread)', 'Parallel (per core)', 'Parallel + SIMD', 'GPU (ILGPU)')) { $measurements | Where-Object Mode -EQ $mode | Group-Object Mode })
         $baseline = ($groups[0].Group.Milliseconds | Measure-Object -Average).Average
-        $report = @("# $node Benchmark Results", '', "Captured: $(Get-Date -Format o)", '', "Deployment: $destination`:~/arm64_simd; Release, self-contained .NET 10, $runtime.", '', "Workload: $Length floats x $Iterations iterations; $Runs runs; one warmup per mode.", '', '| Mode | Run times (ms) | Mean time (ms) | Throughput (M iter/s) | Speedup |', '|---|---|---:|---:|---:|')
+        $report = @("# $node Benchmark Results", '', "Captured: $(Get-Date -Format o)", '', "Deployment: $destination`:~/arm64_simd; Release, self-contained .NET 11, $runtime.", '', "Workload: $Length floats x $Iterations iterations; $Runs runs; one warmup per mode.", '', '| Mode | Run times (ms) | Mean time (ms) | Throughput (M iter/s) | Speedup |', '|---|---|---:|---:|---:|')
         foreach ($group in $groups) {
             if ($group.Count -ne $Runs) { throw "Incomplete measurements for $($group.Name)." }
             $mean = ($group.Group.Milliseconds | Measure-Object -Average).Average

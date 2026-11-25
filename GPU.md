@@ -6,8 +6,8 @@ This project includes an optional GPU benchmark implemented with [ILGPU](https:/
 
 | Platform | Minimum requirements |
 |----------|----------------------|
-| Windows  | NVIDIA driver + CUDA Toolkit 12.x (matching your GPU), .NET SDK 10.0, ILGPU NuGet packages (restored automatically). |
-| Linux (x86_64 or ARM64) | NVIDIA driver (CUDA), `nvidia-smi` accessible, .NET SDK 10.0, ILGPU packages. |
+| Windows  | NVIDIA driver + CUDA Toolkit 12.x (matching your GPU), .NET SDK 11.0, ILGPU NuGet packages (restored automatically). |
+| Linux (x86_64 or ARM64) | NVIDIA driver (CUDA), `nvidia-smi` accessible, .NET SDK 11.0, ILGPU packages. |
 
 > ILGPU falls back to a CPU accelerator if no GPU is available, so the program still runs but will log that the GPU benchmark was skipped.
 

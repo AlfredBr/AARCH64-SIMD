@@ -1,6 +1,11 @@
 # Benchmark Results
 
-Latest Linux ARM64 test-host findings: [node0, October 11, 2026](benchmark-results/node0-20261011.md), including three runs, host configuration, checksums, and raw output. The measurements below are earlier results from a different system.
+Latest Linux ARM64 test-host findings, each with three runs, host configuration, checksums and raw output:
+
+- [node3, November 24, 2026 (.NET 11)](benchmark-results/node3-20261124-230930.md): Cortex-A57 (4 cores, NEON, 4 lanes) + Tegra X1 GPU. Mean times: scalar 6,823.8 ms; parallel 1,791.3 ms (3.81x); parallel + SIMD 485.1 ms (14.07x); GPU 180.7 ms (37.77x). All checksums 2185151.8441. GPU times varied the most from run to run (149.0 to 200.5 ms).
+- [node0, October 11, 2026 (.NET 10)](benchmark-results/node0-20261011.md).
+
+The measurements below are earlier results from a different system (Intel x64, 8-lane AVX2).
 
 Collected with `dotnet run -c Release` on the provided system. Configuration: 4,000,000 floats × 150 logistic iterations; SIMD width 8 lanes (hardware accelerated).
 
